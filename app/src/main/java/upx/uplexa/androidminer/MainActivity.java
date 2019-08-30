@@ -41,6 +41,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
@@ -99,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements OnItemSelectedLis
     public static Context contextOfApplication;
     public String wallet;
     public String pref;
+    private float brightness = -1;
 
     public static Context getContextOfApplication(){
         return contextOfApplication;
@@ -170,6 +172,9 @@ public class MainActivity extends AppCompatActivity implements OnItemSelectedLis
         }
         edMaxCpu = findViewById(R.id.maxcpu);
         cbUseWorkerId = findViewById(R.id.use_worker_id);
+        if(PreferenceHelper.getBlackModeState()) {
+            PreferenceHelper.setBlackModeState(false);
+        }
 
         // check architecture
         if (!Arrays.asList(SUPPORTED_ARCHITECTURES).contains(Build.CPU_ABI.toLowerCase())) {
@@ -284,6 +289,7 @@ public class MainActivity extends AppCompatActivity implements OnItemSelectedLis
 
     private void startMining(View view) {
         if (binder == null) return;
+        PreferenceHelper.setBlackModeState(false);
         Spinner edThreads = findViewById(R.id.threads);
         Spinner edMaxCpu = findViewById(R.id.maxcpu);
         TextView threader = (TextView)edThreads.getSelectedView();
@@ -295,6 +301,70 @@ public class MainActivity extends AppCompatActivity implements OnItemSelectedLis
 
     private void stopMining(View view) {
         binder.getService().stopMining();
+    }
+
+    private void toggleLog(View view) {
+        if (PreferenceHelper.getLogState()) {
+            PreferenceHelper.setLogState(false);
+            Toast.makeText(this, "log: off", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            PreferenceHelper.setLogState(true);
+            Toast.makeText(this, "log: on", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void toggleBlackMode(View view) {
+        if (PreferenceHelper.getBlackModeState()) {
+            PreferenceHelper.setBlackModeState(false);
+            findViewById(R.id.black_mode_background).setVisibility(View.GONE);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            WindowManager.LayoutParams layout = getWindow().getAttributes();
+            layout.screenBrightness = brightness;
+            getWindow().setAttributes(layout);
+            setFullscreen(false);
+            Toast.makeText(this, "black mode: off", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            PreferenceHelper.setBlackModeState(true);
+            findViewById(R.id.black_mode_background).setVisibility(View.VISIBLE);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            WindowManager.LayoutParams layout = getWindow().getAttributes();
+            brightness = layout.screenBrightness;
+            layout.screenBrightness = 0.00001f;
+            getWindow().setAttributes(layout);
+            setFullscreen(true);
+            Toast.makeText(this, "black mode: on", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setFullscreen(boolean state) {
+        if (state) {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+        else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                & View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                & View.SYSTEM_UI_FLAG_FULLSCREEN
+                & View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (PreferenceHelper.getBlackModeState()) {
+            setFullscreen(true);
+        }
     }
 
     @Override
@@ -319,11 +389,13 @@ public class MainActivity extends AppCompatActivity implements OnItemSelectedLis
                 enableButtons(true);
                 findViewById(R.id.start).setOnClickListener(MainActivity.this::startMining);
                 findViewById(R.id.stop).setOnClickListener(MainActivity.this::stopMining);
+                findViewById(R.id.log).setOnClickListener(MainActivity.this::toggleLog);
+                findViewById(R.id.black_mode).setOnClickListener(MainActivity.this::toggleBlackMode);
                 int cores = binder.getService().getAvailableCores();
                 // write suggested cores usage into editText
                 int suggested = cores / 2;
                 if (suggested == 0) suggested = 1;
-                ((TextView) findViewById(R.id.cpus)).setText(String.format("(%d %s)", cores, getString(R.string.cpus)));
+                ((TextView) findViewById(R.id.cpus)).setText(String.format("(%d)", cores));
             }
 
         }
