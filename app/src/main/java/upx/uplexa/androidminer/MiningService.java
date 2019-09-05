@@ -197,6 +197,8 @@ public class MiningService extends Service {
     }
 
     public String getOutput() {
+        if (!PreferenceHelper.getLogState())
+            return "- LOG: OFF         Tap the 'LOG' button to enable it";
         if (outputHandler != null && outputHandler.getOutput() != null)
             return outputHandler.getOutput().toString();
         else return "";
@@ -224,7 +226,9 @@ public class MiningService extends Service {
                 reader = new BufferedReader(new InputStreamReader(inputStream));
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    output.append(line + System.lineSeparator());
+                    if (PreferenceHelper.getLogState()) {
+                        output.append(line).append(System.lineSeparator());
+                    }
                     if (line.contains("accepted")) {
                         accepted++;
                     } else if (line.contains("speed")) {
