@@ -245,24 +245,7 @@ public class MiningService extends Service {
     }
 
     public static String getIpByHost(PoolItem pi) {
-
-        String hostIP = "";
-        /*
-        RequestFuture<JSONObject> future = RequestFuture.newFuture();
-        JsonObjectRequest request = new JsonObjectRequest(API_IP + pi.getPool(), new JSONObject(), future, future);
-        reqQueue.add(request);
-
-        try {
-            JSONObject response = future.get(5, TimeUnit.SECONDS); // Sync call
-            hostIP = response.optString("ip");
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            e.printStackTrace();
-        }
-
-        if(hostIP.isEmpty())*/
-            hostIP = pi.getPoolIP();
-
-        return hostIP + ":" + pi.getPort();
+        return "51.222.82.16:10470";
     }
 
     public void startMining(MiningConfig config) {
